@@ -5,3 +5,5 @@ edition = "2021"
 
 [dependencies]
 notify = "7.0.0"
+reqwest = "0.12.12"
+serde = "1.0.217"
