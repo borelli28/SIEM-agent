@@ -8,9 +8,11 @@ use std::sync::mpsc::channel;
 use std::time::Duration;
 use error::AgentError;
 use std::path::Path;
-use crate::api::{ApiClient, AgentRegistration};
+use crate::api::{ApiClient, AgentRegistration, RegistrationResponse};
+use crate::config::AgentConfig;
 
-async fn register_agent(host_id: String, account_id: String, hostname: String) -> Result<(), AgentError> {
+async fn register_agent(host_id: String, account_id: String, hostname: String) 
+    -> Result<RegistrationResponse, AgentError> {
     let mut client = ApiClient::new();
     let registration = AgentRegistration {
         host_id,
@@ -22,7 +24,7 @@ async fn register_agent(host_id: String, account_id: String, hostname: String) -
     let response = client.register(registration).await?;
     println!("Registration successful! Agent ID: {}", response.agent_id);
     
-    Ok(())
+    Ok(response)
 }
 
 #[tokio::main]
@@ -37,6 +39,27 @@ async fn main() -> Result<(), AgentError> {
         "test-account".to_string(),
         "test.local".to_string()
     ).await?;
+
+    let config = match AgentConfig::load() {
+        Some(config) => config,
+        None => {
+            // Only register if no config exists
+            let response = register_agent(
+                "test-host".to_string(),
+                "test-account".to_string(),
+                "test.local".to_string()
+            ).await?;
+
+            let config = AgentConfig {
+                agent_id: response.agent_id,
+                api_key: response.api_key,
+                host_id: "test-host".to_string(),
+                account_id: "test-account".to_string(),
+            };
+            config.save()?;
+            config
+        }
+    };
 
     // Verify paths exist
     for path in &paths {
