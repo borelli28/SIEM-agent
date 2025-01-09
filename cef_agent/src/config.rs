@@ -8,6 +8,7 @@ pub struct AgentConfig {
     pub api_key: String,
     pub host_id: String,
     pub account_id: String,
+    pub watch_paths: Vec<String>,
 }
 
 impl AgentConfig {

@@ -29,21 +29,10 @@ async fn register_agent(host_id: String, account_id: String, hostname: String)
 
 #[tokio::main]
 async fn main() -> Result<(), AgentError> {
-    let paths = vec![
-        "/path/to/logs/app1.cef.log",
-        "/path/to/logs/app2.cef.log"
-    ];
-
-    register_agent(
-        "test-host".to_string(),
-        "test-account".to_string(),
-        "test.local".to_string()
-    ).await?;
-
     let config = match AgentConfig::load() {
         Some(config) => config,
         None => {
-            // Only register if no config exists
+            // If no config exists
             let response = register_agent(
                 "test-host".to_string(),
                 "test-account".to_string(),
@@ -55,6 +44,10 @@ async fn main() -> Result<(), AgentError> {
                 api_key: response.api_key,
                 host_id: "test-host".to_string(),
                 account_id: "test-account".to_string(),
+                watch_paths: vec![
+                    "/path/to/logs/app1.cef.log".to_string(),
+                    "/path/to/logs/app2.cef.log".to_string(),
+                ],
             };
             config.save()?;
             config
@@ -62,7 +55,7 @@ async fn main() -> Result<(), AgentError> {
     };
 
     // Verify paths exist
-    for path in &paths {
+    for path in &config.watch_paths {
         if !Path::new(path).exists() {
             eprintln!("Path does not exist: {}", path);
             continue;
@@ -81,7 +74,7 @@ async fn main() -> Result<(), AgentError> {
     }).map_err(AgentError::NotifyError)?;
 
     // Add paths to watch list
-    for path in &paths {
+    for path in &config.watch_paths {
         watcher.watch(Path::new(path), RecursiveMode::NonRecursive)
             .map_err(AgentError::NotifyError)?;
     }
