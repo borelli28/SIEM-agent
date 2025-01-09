@@ -48,6 +48,7 @@ async fn main() -> Result<(), AgentError> {
                     "/path/to/logs/app1.cef.log".to_string(),
                     "/path/to/logs/app2.cef.log".to_string(),
                 ],
+                siem_url: "http://localhost:4200".to_string(),
             };
             config.save()?;
             config
