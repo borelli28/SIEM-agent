@@ -1,5 +1,6 @@
 mod api;
 mod error;
+mod config;
 
 use std::sync::mpsc::RecvTimeoutError;
 use notify::{Watcher, RecursiveMode};
