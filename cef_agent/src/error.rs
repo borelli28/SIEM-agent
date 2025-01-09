@@ -5,6 +5,13 @@ use std::fmt;
 pub enum AgentError {
     ApiError(Box<dyn Error>),
     NotifyError(notify::Error),
+    IoError(std::io::Error),
+}
+
+impl From<std::io::Error> for AgentError {
+    fn from(err: std::io::Error) -> Self {
+        AgentError::IoError(err)
+    }
 }
 
 impl fmt::Display for AgentError {
@@ -12,6 +19,7 @@ impl fmt::Display for AgentError {
         match self {
             AgentError::ApiError(e) => write!(f, "API error: {}", e),
             AgentError::NotifyError(e) => write!(f, "Notify error: {}", e),
+            AgentError::IoError(e) => write!(f, "IO error: {}", e),
         }
     }
 }
