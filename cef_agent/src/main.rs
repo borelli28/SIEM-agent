@@ -2,6 +2,7 @@ mod api;
 mod error;
 mod config;
 
+use clap::{Command, Arg, ArgAction};
 use std::sync::mpsc::RecvTimeoutError;
 use notify::{Watcher, RecursiveMode};
 use std::sync::mpsc::channel;
@@ -67,6 +68,72 @@ async fn register_agent(host_id: String, account_id: String, hostname: String)
 
 #[tokio::main]
 async fn main() -> Result<(), AgentError> {
+    // Command line interface setup
+    let matches = Command::new("CEF Agent")
+        .version("1.0")
+        .subcommand(Command::new("config")
+            .about("Configure the agent")
+            .subcommand(Command::new("add-path")
+                .about("Add a path to monitor")
+                .arg(Arg::new("path")
+                    .required(true)
+                    .help("Path to monitor")))
+            .subcommand(Command::new("remove-path")
+                .about("Remove a monitored path")
+                .arg(Arg::new("path")
+                    .required(true)
+                    .help("Path to remove")))
+            .subcommand(Command::new("list-paths")
+                .about("List all monitored paths"))
+            .subcommand(Command::new("set-url")
+                .about("Set SIEM URL")
+                .arg(Arg::new("url")
+                    .required(true)
+                    .help("SIEM URL"))))
+        .get_matches();
+
+    // Handle configuration commands if present
+    if let Some(config_matches) = matches.subcommand_matches("config") {
+        let mut config = AgentConfig::load().ok_or(AgentError::ValidationError("No configuration found".to_string()))?;
+
+        match config_matches.subcommand() {
+            Some(("add-path", sub_m)) => {
+                let path = sub_m.get_one::<String>("path").unwrap();
+                if Path::new(path).exists() {
+                    config.watch_paths.push(path.to_string());
+                    config.save()?;
+                    println!("Added path: {}", path);
+                } else {
+                    println!("Path does not exist: {}", path);
+                }
+                return Ok(());
+            },
+            Some(("remove-path", sub_m)) => {
+                let path = sub_m.get_one::<String>("path").unwrap();
+                config.watch_paths.retain(|p| p != path);
+                config.save()?;
+                println!("Removed path: {}", path);
+                return Ok(());
+            },
+            Some(("list-paths", _)) => {
+                println!("Monitored paths:");
+                for path in &config.watch_paths {
+                    println!("  {}", path);
+                }
+                return Ok(());
+            },
+            Some(("set-url", sub_m)) => {
+                let url = sub_m.get_one::<String>("url").unwrap();
+                config.siem_url = url.to_string();
+                config.save()?;
+                println!("SIEM URL updated to: {}", url);
+                return Ok(());
+            },
+            _ => {}
+        }
+    }
+
+    // Regular agent startup
     let config = match AgentConfig::load() {
         Some(config) => config,
         None => {
