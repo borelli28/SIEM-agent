@@ -122,15 +122,11 @@ impl ApiClient {
             .ok_or(AgentError::ValidationError("No configuration available".to_string()))?;
 
         let payload = serde_json::json!({
-            "agent_id": config.agent_id,
-            "host_id": config.host_id,
-            "account_id": config.account_id,
-            "timestamp": chrono::Utc::now().to_rfc3339(),
+            "api_key": config.api_key,
         });
 
         let response = self.client
             .post(&format!("{}/heartbeat", API_BASE_URL))
-            .header("Authorization", format!("Bearer {}", config.api_key))
             .json(&payload)
             .send()
             .await
