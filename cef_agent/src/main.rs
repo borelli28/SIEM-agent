@@ -40,6 +40,7 @@ async fn register_agent(host_id: String, account_id: String, hostname: String)
     -> Result<RegistrationResponse, AgentError> {
     let mut client = ApiClient::new();
     let registration = AgentRegistration {
+        id: String::new(),
         host_id,
         account_id,
         ip_address: Some("127.0.0.1:3001".to_string()),
