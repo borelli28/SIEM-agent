@@ -6,9 +6,9 @@ mod prompt;
 mod registration;
 mod watcher;
 
-use crate::error::AgentError;
-use crate::config::AgentConfig;
 use crate::watcher::FileWatcher;
+use crate::config::AgentConfig;
+use crate::error::AgentError;
 
 #[tokio::main]
 async fn main() -> Result<(), AgentError> {

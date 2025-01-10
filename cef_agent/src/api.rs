@@ -1,11 +1,8 @@
 use serde::{Deserialize, Serialize};
-use crate::error::AgentError;
 use crate::config::AgentConfig;
-use reqwest::Client;
+use crate::error::AgentError;
 use std::path::PathBuf;
-use reqwest::multipart::{Form, Part};
-use tokio::fs::File;
-use tokio::io::AsyncReadExt;
+use reqwest::Client;
 
 const API_BASE_URL: &str = "http://localhost:4200/backend/agent";
 

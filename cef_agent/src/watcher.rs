@@ -1,10 +1,10 @@
-use notify::{Watcher, RecursiveMode};
 use std::sync::mpsc::{channel, RecvTimeoutError};
-use std::time::Duration;
-use std::path::Path;
+use notify::{Watcher, RecursiveMode};
+use crate::config::AgentConfig;
 use crate::error::AgentError;
 use crate::api::ApiClient;
-use crate::config::AgentConfig;
+use std::time::Duration;
+use std::path::Path;
 
 pub struct FileWatcher {
     watcher: notify::RecommendedWatcher,

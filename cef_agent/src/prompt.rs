@@ -1,6 +1,6 @@
+use crate::error::AgentError;
 use std::io::{self, Write};
 use std::path::Path;
-use crate::error::AgentError;
 
 pub fn prompt(message: &str) -> Result<String, AgentError> {
     print!("{}", message);
