@@ -3,14 +3,17 @@ use std::sync::mpsc::{channel, RecvTimeoutError};
 use std::time::Duration;
 use std::path::Path;
 use crate::error::AgentError;
+use crate::api::ApiClient;
+use crate::config::AgentConfig;
 
 pub struct FileWatcher {
     watcher: notify::RecommendedWatcher,
     receiver: std::sync::mpsc::Receiver<notify::Event>,
+    api_client: ApiClient,
 }
 
 impl FileWatcher {
-    pub fn new() -> Result<Self, AgentError> {
+    pub fn new(config: AgentConfig) -> Result<Self, AgentError> {
         let (tx, rx) = channel();
         let watcher = notify::recommended_watcher(move |res| {
             match res {
@@ -22,6 +25,7 @@ impl FileWatcher {
         Ok(FileWatcher {
             watcher,
             receiver: rx,
+            api_client: ApiClient::with_config(config),
         })
     }
 
@@ -37,28 +41,43 @@ impl FileWatcher {
         Ok(())
     }
 
-    pub fn run(&self) -> Result<(), AgentError> {
+    pub async fn run(&self) -> Result<(), AgentError> {
+        let mut heartbeat_interval = tokio::time::interval(Duration::from_secs(5 * 60));
+
         loop {
-            match self.receiver.recv_timeout(Duration::from_secs(1)) {
-                Ok(event) => {
-                    if event.kind.is_modify() || event.kind.is_create() {
-                        for path in event.paths {
-                            if path.extension().unwrap_or_default() == "log" {
-                                println!("Change detected in: {:?}", path);
-                                // TODO: Send to SIEM API
+            tokio::select! {
+                _ = heartbeat_interval.tick() => {
+                    if let Err(e) = self.api_client.send_heartbeat().await {
+                        eprintln!("Failed to send heartbeat: {}", e);
+                    }
+                }
+                _ = async {
+                    match self.receiver.recv_timeout(Duration::from_secs(1)) {
+                        Ok(event) => {
+                            if event.kind.is_modify() || event.kind.is_create() {
+                                for path in event.paths {
+                                    if path.extension().unwrap_or_default() == "log" {
+                                        println!("Change detected in: {:?}", path);
+                                        match self.api_client.upload_log(path).await {
+                                            Ok(_) => println!("Successfully uploaded log file"),
+                                            Err(e) => eprintln!("Failed to upload log file: {}", e),
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            match e {
+                                RecvTimeoutError::Timeout => (),
+                                RecvTimeoutError::Disconnected => {
+                                    eprintln!("Watch error: channel disconnected");
+                                    return Err(AgentError::ValidationError("Channel disconnected".to_string()));
+                                }
                             }
                         }
                     }
-                }
-                Err(e) => {
-                    match e {
-                        RecvTimeoutError::Timeout => continue,
-                        RecvTimeoutError::Disconnected => {
-                            eprintln!("Watch error: channel disconnected");
-                            break Ok(());
-                        }
-                    }
-                }
+                    Ok::<(), AgentError>(())
+                } => {}
             }
         }
     }
