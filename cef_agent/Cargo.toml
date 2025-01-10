@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+clap = "4.5.26"
 notify = "7.0.0"
 reqwest = { version = "0.12", features = ["json", "multipart"] }
 serde = { version = "1.0.217", features = ["derive"] }
