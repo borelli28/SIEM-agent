@@ -44,7 +44,7 @@ async fn register_agent(host_id: String, account_id: String, hostname: String)
         api_key: String::new(),
         host_id,
         account_id,
-        ip_address: Some("127.0.0.1:3001".to_string()),
+        ip_address: Some("127.0.0.1".to_string()),
         hostname: Some(hostname),
         status: "Active".to_string()
     };
