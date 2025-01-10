@@ -7,10 +7,12 @@ const API_BASE_URL: &str = "http://localhost:4200/backend/agent";
 #[derive(Debug, Serialize)]
 pub struct AgentRegistration {
     pub id: String,
+    pub api_key: String,
     pub host_id: String,
     pub account_id: String,
     pub ip_address: Option<String>,
     pub hostname: Option<String>,
+    pub status: String
 }
 
 #[derive(Deserialize)]

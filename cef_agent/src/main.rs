@@ -41,10 +41,12 @@ async fn register_agent(host_id: String, account_id: String, hostname: String)
     let mut client = ApiClient::new();
     let registration = AgentRegistration {
         id: String::new(),
+        api_key: String::new(),
         host_id,
         account_id,
         ip_address: Some("127.0.0.1:3001".to_string()),
-        hostname: Some(hostname)
+        hostname: Some(hostname),
+        status: "Active".to_string()
     };
 
     let response = client.register(registration).await?;
