@@ -2,11 +2,11 @@ mod api;
 mod error;
 mod config;
 
-use clap::{Command, Arg, ArgAction};
 use std::sync::mpsc::RecvTimeoutError;
 use notify::{Watcher, RecursiveMode};
 use std::sync::mpsc::channel;
 use std::io::{self, Write};
+use clap::{Command, Arg};
 use std::time::Duration;
 use error::AgentError;
 use std::path::Path;
