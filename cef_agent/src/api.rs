@@ -51,6 +51,10 @@ impl ApiClient {
         }
     }
 
+    pub fn get_config(&self) -> &AgentConfig {
+        self.config.as_ref().unwrap()
+    }
+
     pub async fn register(&mut self, registration: AgentRegistration) -> Result<RegistrationResponse, AgentError> {
         let response = self.client
             .post(&format!("{}/register", API_BASE_URL))

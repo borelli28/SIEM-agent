@@ -8,6 +8,7 @@ mod watcher;
 
 use crate::error::AgentError;
 use crate::config::AgentConfig;
+use crate::watcher::FileWatcher;
 
 #[tokio::main]
 async fn main() -> Result<(), AgentError> {
@@ -94,9 +95,11 @@ async fn main() -> Result<(), AgentError> {
     };
 
     // Initialize and run file watcher
-    let mut file_watcher = watcher::FileWatcher::new()?;
-    file_watcher.watch_paths(&config.watch_paths)?;
-    file_watcher.run()?;
+    let mut file_watcher = FileWatcher::new(config)?;
+    file_watcher.watch_paths(&file_watcher.get_watch_paths())?;
+    
+    println!("Agent started. Watching paths for changes...");
+    file_watcher.run().await?;
 
     Ok(())
 }

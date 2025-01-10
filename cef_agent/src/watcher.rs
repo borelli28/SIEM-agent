@@ -41,6 +41,10 @@ impl FileWatcher {
         Ok(())
     }
 
+    pub fn get_watch_paths(&self) -> Vec<String> {
+        self.api_client.get_config().watch_paths.clone()
+    }
+
     pub async fn run(&self) -> Result<(), AgentError> {
         let mut heartbeat_interval = tokio::time::interval(Duration::from_secs(5 * 60));
 
