@@ -71,29 +71,23 @@ impl ApiClient {
         }
     }
 
-
     pub async fn upload_log(&self, path: PathBuf) -> Result<(), AgentError> {
         let config = self.config.as_ref()
             .ok_or(AgentError::ValidationError("No configuration available".to_string()))?;
 
-        // Read file
-        let mut file = File::open(&path).await?;
-        let mut buffer = Vec::new();
-        file.read_to_end(&mut buffer).await?;
-
-        // Create file part
-        let file_part = Part::bytes(buffer)
+        // Create file
+        let file_bytes = tokio::fs::read(&path).await?;
+        let file_part = reqwest::multipart::Part::bytes(file_bytes)
             .file_name(path.file_name().unwrap().to_string_lossy().to_string())
             .mime_str("application/octet-stream")?;
 
-        // Create the form
-        let form = Form::new()
-            .part("log_file", file_part)
-            .text("api_key", config.api_key.clone())
+        // Create the multipart form
+        let form = reqwest::multipart::Form::new()
+            .part("file", file_part)
             .text("account_id", config.account_id.clone())
-            .text("host_id", config.host_id.clone());
+            .text("host_id", config.host_id.clone())
+            .text("api_key", config.api_key.clone());
 
-        // Send to SIEM API
         let response = self.client
             .post(&format!("{}/upload", API_BASE_URL))
             .multipart(form)
