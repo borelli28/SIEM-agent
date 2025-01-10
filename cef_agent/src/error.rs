@@ -6,6 +6,7 @@ pub enum AgentError {
     ApiError(Box<dyn Error>),
     NotifyError(notify::Error),
     IoError(std::io::Error),
+    ValidationError(String),
 }
 
 impl From<std::io::Error> for AgentError {
@@ -20,6 +21,7 @@ impl fmt::Display for AgentError {
             AgentError::ApiError(e) => write!(f, "API error: {}", e),
             AgentError::NotifyError(e) => write!(f, "Notify error: {}", e),
             AgentError::IoError(e) => write!(f, "IO error: {}", e),
+            AgentError::ValidationError(e) => write!(f, "Validation error: {}", e),
         }
     }
 }
