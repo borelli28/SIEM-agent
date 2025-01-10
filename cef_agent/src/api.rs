@@ -3,9 +3,10 @@ use crate::error::AgentError;
 use crate::config::AgentConfig;
 use reqwest::Client;
 use std::path::PathBuf;
-use std::fs::File;
-use std::io::Read;
 use chrono;
+use reqwest::multipart::{Form, Part};
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
 
 const API_BASE_URL: &str = "http://localhost:4200/backend/agent";
 
@@ -67,30 +68,32 @@ impl ApiClient {
         }
     }
 
+
     pub async fn upload_log(&self, path: PathBuf) -> Result<(), AgentError> {
         let config = self.config.as_ref()
             .ok_or(AgentError::ValidationError("No configuration available".to_string()))?;
 
-        // Read the file
-        let mut file = File::open(&path)?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
+        // Read file
+        let mut file = File::open(&path).await?;
+        let mut buffer = Vec::new();
+        file.read_to_end(&mut buffer).await?;
 
-        // Prepare the upload payload
-        let payload = serde_json::json!({
-            "agent_id": config.agent_id,
-            "host_id": config.host_id,
-            "account_id": config.account_id,
-            "file_path": path.to_string_lossy().to_string(),
-            "content": contents,
-            "timestamp": chrono::Utc::now().to_rfc3339(),
-        });
+        // Create file part
+        let file_part = Part::bytes(buffer)
+            .file_name(path.file_name().unwrap().to_string_lossy().to_string())
+            .mime_str("application/octet-stream")?;
+
+        // Create the form
+        let form = Form::new()
+            .part("log_file", file_part)
+            .text("api_key", config.api_key.clone())
+            .text("account_id", config.account_id.clone())
+            .text("host_id", config.host_id.clone());
 
         // Send to SIEM API
         let response = self.client
             .post(&format!("{}/upload", API_BASE_URL))
-            .header("Authorization", format!("Bearer {}", config.api_key))
-            .json(&payload)
+            .multipart(form)
             .send()
             .await
             .map_err(|e| AgentError::ApiError(Box::new(e)))?;
