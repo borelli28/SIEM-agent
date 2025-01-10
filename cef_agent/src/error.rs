@@ -7,6 +7,7 @@ pub enum AgentError {
     NotifyError(notify::Error),
     IoError(std::io::Error),
     ValidationError(String),
+    UploadError(String),
 }
 
 impl From<std::io::Error> for AgentError {
@@ -22,6 +23,7 @@ impl fmt::Display for AgentError {
             AgentError::NotifyError(e) => write!(f, "Notify error: {}", e),
             AgentError::IoError(e) => write!(f, "IO error: {}", e),
             AgentError::ValidationError(e) => write!(f, "Validation error: {}", e),
+            AgentError::UploadError(e) => write!(f, "Upload error: {}", e),
         }
     }
 }
@@ -42,6 +44,12 @@ impl From<reqwest::Error> for AgentError {
 
 impl From<String> for AgentError {
     fn from(err: String) -> Self {
-        AgentError::ApiError(err.into())
+        AgentError::ValidationError(err)
+    }
+}
+
+impl From<serde_json::Error> for AgentError {
+    fn from(err: serde_json::Error) -> Self {
+        AgentError::ApiError(Box::new(err))
     }
 }
