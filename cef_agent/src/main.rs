@@ -5,11 +5,36 @@ mod config;
 use std::sync::mpsc::RecvTimeoutError;
 use notify::{Watcher, RecursiveMode};
 use std::sync::mpsc::channel;
+use std::io::{self, Write};
 use std::time::Duration;
 use error::AgentError;
 use std::path::Path;
 use crate::api::{ApiClient, AgentRegistration, RegistrationResponse};
 use crate::config::AgentConfig;
+
+fn prompt(message: &str) -> Result<String, AgentError> {
+    print!("{}", message);
+    io::stdout().flush()?;
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+    Ok(input.trim().to_string())
+}
+
+fn prompt_watch_paths() -> Result<Vec<String>, AgentError> {
+    let mut paths = Vec::new();
+    loop {
+        let path = prompt("Enter path to watch (or 'done' to finish): ")?;
+        if path.to_lowercase() == "done" {
+            break;
+        }
+        if Path::new(&path).exists() {
+            paths.push(path);
+        } else {
+            println!("Path does not exist: {}", path);
+        }
+    }
+    Ok(paths)
+}
 
 async fn register_agent(host_id: String, account_id: String, hostname: String) 
     -> Result<RegistrationResponse, AgentError> {
@@ -32,23 +57,34 @@ async fn main() -> Result<(), AgentError> {
     let config = match AgentConfig::load() {
         Some(config) => config,
         None => {
-            // If no config exists
+            println!("No configuration found. Let's set up the agent.");
+
+            let host_id = prompt("Enter host ID: ")?;
+            let account_id = prompt("Enter account ID: ")?;
+            let hostname = prompt("Enter hostname: ")?;
+            let siem_url = prompt("Enter SIEM URL (default: http://localhost:4200): ")?;
+            let siem_url = if siem_url.is_empty() {
+                "http://localhost:4200".to_string()
+            } else {
+                siem_url
+            };
+
+            println!("Now let's set up the paths to monitor.");
+            let watch_paths = prompt_watch_paths()?;
+
             let response = register_agent(
-                "test-host".to_string(),
-                "test-account".to_string(),
-                "test.local".to_string()
+                host_id.clone(),
+                account_id.clone(),
+                hostname
             ).await?;
 
             let config = AgentConfig {
                 agent_id: response.agent_id,
                 api_key: response.api_key,
-                host_id: "test-host".to_string(),
-                account_id: "test-account".to_string(),
-                watch_paths: vec![
-                    "/path/to/logs/app1.cef.log".to_string(),
-                    "/path/to/logs/app2.cef.log".to_string(),
-                ],
-                siem_url: "http://localhost:4200".to_string(),
+                host_id,
+                account_id,
+                watch_paths,
+                siem_url,
             };
             config.save()?;
             config
