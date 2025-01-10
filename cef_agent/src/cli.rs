@@ -1,0 +1,27 @@
+use clap::{Command, Arg};
+
+pub fn create_cli() -> Command {
+    Command::new("CEF Agent")
+        .version("1.0")
+        .author("Your Name")
+        .about("CEF Agent for log monitoring")
+        .subcommand(Command::new("config")
+            .about("Configure the agent")
+            .subcommand(Command::new("add-path")
+                .about("Add a path to monitor")
+                .arg(Arg::new("path")
+                    .required(true)
+                    .help("Path to monitor")))
+            .subcommand(Command::new("remove-path")
+                .about("Remove a monitored path")
+                .arg(Arg::new("path")
+                    .required(true)
+                    .help("Path to remove")))
+            .subcommand(Command::new("list-paths")
+                .about("List all monitored paths"))
+            .subcommand(Command::new("set-url")
+                .about("Set SIEM URL")
+                .arg(Arg::new("url")
+                    .required(true)
+                    .help("SIEM URL"))))
+}
