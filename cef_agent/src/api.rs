@@ -133,10 +133,13 @@ impl ApiClient {
             ))));
         }
 
+        // Heartbeat Ok, check for failed uploads
+        // retry_uploads()
+
         Ok(())
     }
 
-    pub fn get_api_key(&self) -> Option<&String> {
-        self.api_key.as_ref()
+    fn retry_uploads() -> Result<(), AgentError> {
+        Ok(())
     }
 }
