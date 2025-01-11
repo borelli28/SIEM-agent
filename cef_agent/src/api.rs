@@ -1,8 +1,12 @@
 use serde::{Deserialize, Serialize};
 use crate::config::AgentConfig;
+use std::collections::HashMap;
 use crate::error::AgentError;
+use chrono::{DateTime, Utc};
+use tokio::sync::RwLock;
 use std::path::PathBuf;
 use reqwest::Client;
+use std::sync::Arc;
 
 const API_BASE_URL: &str = "http://localhost:4200/backend/agent";
 
@@ -24,10 +28,17 @@ pub struct RegistrationResponse {
     pub api_key: String,
 }
 
+#[derive(Debug)]
+struct FileUploadState {
+    last_successful_upload: DateTime<Utc>,
+    upload_failed: bool,
+}
+
 pub struct ApiClient {
     client: Client,
     api_key: Option<String>,
     config: Option<AgentConfig>,
+    file_states: Arc<RwLock<HashMap<PathBuf, FileUploadState>>>,
 }
 
 impl ApiClient {
@@ -36,6 +47,7 @@ impl ApiClient {
             client: Client::new(),
             api_key: None,
             config: None,
+            file_states: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -44,6 +56,7 @@ impl ApiClient {
             client: Client::new(),
             api_key: Some(config.api_key.clone()),
             config: Some(config),
+            file_states: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -92,7 +105,19 @@ impl ApiClient {
             .await
             .map_err(|e| AgentError::ApiError(Box::new(e)))?;
 
+        // Upload unsuccessful
         if !response.status().is_success() {
+            let mut states = self.file_states.write().await;
+            let timestamp = states
+                .get(&path)
+                .map(|state| state.last_successful_upload)
+                .unwrap_or_else(|| Utc::now());
+
+            states.insert(path.clone(), FileUploadState {
+                last_successful_upload: timestamp,
+                upload_failed: true,
+            });
+
             return Err(AgentError::ApiError(Box::new(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 format!(
@@ -103,7 +128,14 @@ impl ApiClient {
             ))));
         }
 
+        // Upload successful
         println!("Successfully uploaded log: {:?}", path);
+        let mut states = self.file_states.write().await;
+        states.insert(path.clone(), FileUploadState {
+            last_successful_upload: Utc::now(),
+            upload_failed: false,
+        });
+
         Ok(())
     }
 
@@ -133,10 +165,26 @@ impl ApiClient {
             ))));
         }
 
+        // Heartbeat successful, retry failed uploads
+        self.retry_uploads().await?;
+
         Ok(())
     }
 
-    pub fn get_api_key(&self) -> Option<&String> {
-        self.api_key.as_ref()
+    async fn retry_uploads(&self) -> Result<(), AgentError> {
+        let states = self.file_states.read().await;
+        let failed_uploads: Vec<PathBuf> = states
+            .iter()
+            .filter(|(_, state)| state.upload_failed)
+            .map(|(path, _)| path.clone())
+            .collect();
+
+        for path in failed_uploads {
+            if let Err(e) = self.upload_log(path.clone()).await {
+                eprintln!("Failed to retry upload for {:?}: {}", path, e);
+            }
+        }
+
+        Ok(())
     }
 }
