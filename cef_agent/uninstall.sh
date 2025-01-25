@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# uninstall.sh
 set -e
 
 # Check if running as root
@@ -15,6 +14,9 @@ systemctl disable cef-agent
 
 # Remove the service file
 rm -f /etc/systemd/system/cef-agent.service
+
+# Remove the binary
+rm -rf /opt/cef-agent
 
 # Reload systemd daemon
 systemctl daemon-reload
