@@ -97,7 +97,7 @@ async fn main() -> Result<(), AgentError> {
     // Initialize and run file watcher
     let mut file_watcher = FileWatcher::new(config)?;
     file_watcher.watch_paths(&file_watcher.get_watch_paths())?;
-    
+
     println!("Agent started. Watching paths for changes...");
     file_watcher.run().await?;
 
