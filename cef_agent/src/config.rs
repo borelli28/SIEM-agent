@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use std::env;
 use std::fs;
 
 #[derive(Serialize, Deserialize)]
@@ -14,8 +14,11 @@ pub struct AgentConfig {
 
 impl AgentConfig {
     pub fn load() -> Option<Self> {
-        let config_path = "agent_config.json";
-        if Path::new(config_path).exists() {
+        let exe_path = env::current_exe().ok()?;
+        let exe_dir = exe_path.parent()?;
+        let config_path = exe_dir.join("agent_config.json");
+
+        if config_path.exists() {
             let content = fs::read_to_string(config_path).ok()?;
             serde_json::from_str(&content).ok()
         } else {
@@ -24,7 +27,15 @@ impl AgentConfig {
     }
 
     pub fn save(&self) -> std::io::Result<()> {
-        let config_path = "agent_config.json";
+        let exe_path = env::current_exe()?;
+        let exe_dir = exe_path.parent().ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "Could not determine executable directory"
+            )
+        })?;
+
+        let config_path = exe_dir.join("agent_config.json");
         let content = serde_json::to_string_pretty(self)?;
         fs::write(config_path, content)
     }
