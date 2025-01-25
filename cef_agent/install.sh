@@ -8,11 +8,12 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# Create directory for the binary
+# Create directory for the binary and config
 mkdir -p /opt/cef-agent
 
-# Copy the binary and set permissions
+# Copy the binary and config
 cp cef_agent /opt/cef-agent/
+cp agent_config.json /opt/cef-agent/
 chmod +x /opt/cef-agent/cef_agent
 
 # Create systemd service file
