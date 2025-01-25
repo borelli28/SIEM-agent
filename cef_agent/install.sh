@@ -8,12 +8,11 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# Create directory for the binary and config
+# Create directory for the binary
 mkdir -p /opt/cef-agent
 
-# Copy the binary and config
+# Copy the binary
 cp cef_agent /opt/cef-agent/
-cp agent_config.json /opt/cef-agent/
 chmod +x /opt/cef-agent/cef_agent
 
 # Create systemd service file
@@ -37,9 +36,9 @@ EOF
 # Reload systemd daemon
 systemctl daemon-reload
 
-# Enable and start the service
+# Enable the service (but don't start it yet)
 systemctl enable cef-agent
-systemctl start cef-agent
 
-echo "CEF Agent has been installed and started as a system service!"
-echo "You can check its status with: systemctl status cef-agent"
+echo "CEF Agent has been installed!"
+echo "Please run 'sudo /opt/cef-agent/cef_agent' to configure the agent"
+echo "After configuration, start the service with: sudo systemctl start cef-agent"
