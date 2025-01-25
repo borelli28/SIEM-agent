@@ -11,3 +11,4 @@ Cargo.lock
 **/*.rs.bk
 
 agent_config.json
+*.tar.gz
