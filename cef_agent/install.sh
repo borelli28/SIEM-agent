@@ -36,7 +36,7 @@ EOF
 # Reload systemd daemon
 systemctl daemon-reload
 
-# Enable the service (but don't start it yet)
+# Enable the service
 systemctl enable cef-agent
 
 echo "CEF Agent has been installed!"
