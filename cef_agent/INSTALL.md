@@ -3,6 +3,7 @@
 ## Prerequisites
 - Linux operating system
 - Root/sudo privileges
+- Valid Host ID and Account ID from your SIEM backend
 
 ## Installation Steps
 
